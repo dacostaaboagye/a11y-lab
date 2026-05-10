@@ -1,7 +1,7 @@
 ---
 id: E-01
 title: First lesson — the accessible contact form
-status: ready-for-human-review
+status: shipped
 priority: P0
 domain: frontend
 owner: claude
@@ -159,3 +159,7 @@ Setup: `pnpm --filter @a11y-lab/web dev` and open `/lessons/contact-form`. The p
 - [ ] **12. Mobile layout sanity.** Resize to 320px wide. Scroll. *Expected:* no horizontal scroll. Form stays single-column. Checklist sits below the form, not beside it. Touch targets ~44px tall.
 - [ ] **13. Visible focus ring.** Tab through every interactive element on both versions. *Expected:* every focusable element shows a visible focus indicator. No bare `outline: none`.
 
+
+## Related PRs
+
+- [PR #1](https://github.com/dacostaaboagye/a11y-lab/pull/1) - `feat(e-01): first lesson — accessible contact form`
