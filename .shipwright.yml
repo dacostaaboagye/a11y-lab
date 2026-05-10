@@ -44,6 +44,10 @@ roles:
       scope:
         - apps/web/**
         - packages/contracts/**
+        # Workspace-manifest paths needed for `pnpm add` etc. Read-only-ish:
+        # the specialist may add deps but should not touch unrelated config.
+        - package.json
+        - pnpm-lock.yaml
     invoke_at:
       - design-and-build
     parallel_with:
