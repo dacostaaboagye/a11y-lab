@@ -1,7 +1,7 @@
 ---
 id: E-01
 title: First lesson — the accessible contact form
-status: refined
+status: sliced
 priority: P0
 domain: frontend
 owner: claude
@@ -73,3 +73,54 @@ None blocking. Recommendations made on the three input questions:
 - **Toggle vs. routes:** inline toggle on a single route (preserves side-by-side mental model; avoids navigation cost mid-lesson).
 - **Persistence:** stateless (lesson is a kata, not an app; persistence would dilute the a11y signal).
 - **Automated a11y test:** deferred to a future lesson so this one stays a manual screen-reader practice exercise.
+
+## Slice
+
+This is a frontend-only epic: no backend, no QA-as-write-code in the build stage (QA still writes tests at Stage 5), no contract drift risk. The slice exists to name (a) what's frozen, (b) what the frontend specialist owns, and (c) what scaffold is part of this epic vs assumed.
+
+**Frozen paths** (read-only after this stage until re-slice):
+
+- `packages/contracts/**` — the type contract for the lesson (currently just `Lesson` in `@a11y-lab/contracts`). Frontend may import; not modify.
+
+**Scaffold included in this epic** (since `apps/web` is currently a stub):
+
+- Initialize Next.js 16 + React 19 + TypeScript in `apps/web` using the App Router.
+- Tailwind CSS 4 set up with a minimal token surface — focus ring, semantic colors (foreground / muted / accent / danger / success), spacing. No shadcn / no design system extraction yet — that's a future epic.
+- Root layout with `<html lang="en">` + `<body>` + a generic skip-link to `#main`.
+- A single route at `/lessons/contact-form` for the lesson.
+- Bare-minimum Next.js config (no images domain config yet; no env handling beyond what Next ships with).
+
+**Frontend slice** (`feature/e-01-accessible-form-lesson--frontend`):
+
+- *Files frontend may write:*
+  - `apps/web/**` — Next.js scaffold + the lesson route + components + tokens.
+  - `packages/contracts/src/index.ts` — read-only after slice freeze; frontend imports only.
+- *Components to build* (suggested decomposition; specialist may refine):
+  - `<LessonChrome>` — page wrapper that renders the toggle + a header + slot for the active version + the screen-reader checklist panel.
+  - `<VersionToggle>` — accessible segmented control / radio group for switching broken vs fixed. Default state: broken.
+  - `<BrokenContactForm>` — faithful failure-mode form (placeholders-as-labels, div-as-submit, color-only errors). Self-contained component.
+  - `<FixedContactForm>` — accessible form (native semantics, label associations, `aria-describedby`, focus management, polite live region). Self-contained component.
+  - `<ScreenReaderChecklist>` — sidebar / below-fold panel listing 4–5 concrete actions to try.
+- *State ownership:* local component state via `useState` for form values + validation. No global store, no React Query (stateless lesson, no API). Toggle state lives in `<LessonChrome>` and resets form state when flipped.
+- *Tokens to add* under `apps/web/src/app/globals.css`: `--color-foreground`, `--color-muted`, `--color-accent`, `--color-danger`, `--color-success`, `--ring-color`, `--ring-width`. Use these via Tailwind's `@theme` directive (Tailwind 4 syntax).
+- *Mobile-first:* single-column layout at <768px. `<ScreenReaderChecklist>` collapses below the form on mobile, sits to the side on ≥1024px.
+
+**QA slice** (post-integrate, on `feature/e-01-accessible-form-lesson--qa`):
+
+- Component tests (Vitest + Testing Library): each form variant renders, validates correctly, behaves on submit.
+- A11y assertions: focus moves on submit-with-errors; `aria-invalid` toggles; live region announces.
+- Manual screen-reader plan as enumerated in the existing `## UAT scenarios`.
+
+**Build commands** (from `.shipwright.yml` `verify.detected`):
+
+- Install: `pnpm install` (will pull Next.js + React + Tailwind into `apps/web`).
+- Verify: `pnpm verify` (currently echoes ok; specialist should refine to actually run lint + typecheck + test once those exist).
+- Format: `biome` if added; otherwise `pnpm exec next lint`.
+
+**Out of scope for this slice** (reaffirming the refined epic):
+
+- No backend submission, no API route, no contract additions beyond the existing `Lesson` type.
+- No automated a11y testing in CI (axe / pa11y).
+- No design-system extraction; one-off Tailwind tokens are fine.
+- No theming / dark-mode wiring (can be added in a follow-up).
+- No additional lessons; this epic ships the contact-form lesson only.
