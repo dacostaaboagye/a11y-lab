@@ -1,0 +1,12 @@
+{
+  "name": "@a11y-lab/web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'TODO: wire next dev'",
+    "build": "echo 'TODO: wire next build'",
+    "verify": "echo 'web verify (stub)'",
+    "lint": "echo 'web lint (stub)'",
+    "typecheck": "echo 'web typecheck (stub)'"
+  }
+}

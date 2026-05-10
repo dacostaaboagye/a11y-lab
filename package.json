@@ -1,0 +1,20 @@
+{
+  "name": "a11y-lab",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A practice ground for building UIs that work for visually impaired users. Each lesson is a small exercise implemented two ways — the everyday way that breaks, and the accessible way that doesn't.",
+  "type": "module",
+  "scripts": {
+    "install:all": "pnpm install",
+    "dev": "echo 'TODO: wire dev once apps are real'",
+    "verify": "echo 'verify: lint + typecheck + tests' && pnpm -r run verify",
+    "lint": "biome check .",
+    "typecheck": "tsc -b",
+    "format": "biome check . --write",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {}
+}

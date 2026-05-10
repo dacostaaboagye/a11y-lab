@@ -1,0 +1,11 @@
+{
+  "name": "@a11y-lab/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'TODO: wire api dev'",
+    "verify": "echo 'api verify (stub)'",
+    "lint": "echo 'api lint (stub)'",
+    "typecheck": "echo 'api typecheck (stub)'"
+  }
+}
