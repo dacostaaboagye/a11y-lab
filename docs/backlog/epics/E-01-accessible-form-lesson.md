@@ -1,7 +1,7 @@
 ---
 id: E-01
 title: First lesson — the accessible contact form
-status: tested
+status: reviewed
 priority: P0
 domain: frontend
 owner: claude
