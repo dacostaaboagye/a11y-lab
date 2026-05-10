@@ -16,5 +16,8 @@
   "engines": {
     "node": ">=20"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "minimatch": "^10.2.5",
+    "yaml": "^2.8.4"
+  }
 }

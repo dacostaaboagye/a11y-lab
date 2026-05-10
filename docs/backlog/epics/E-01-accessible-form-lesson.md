@@ -1,7 +1,7 @@
 ---
 id: E-01
 title: First lesson — the accessible contact form
-status: refined
+status: ready-for-human-review
 priority: P0
 domain: frontend
 owner: claude
@@ -73,3 +73,89 @@ None blocking. Recommendations made on the three input questions:
 - **Toggle vs. routes:** inline toggle on a single route (preserves side-by-side mental model; avoids navigation cost mid-lesson).
 - **Persistence:** stateless (lesson is a kata, not an app; persistence would dilute the a11y signal).
 - **Automated a11y test:** deferred to a future lesson so this one stays a manual screen-reader practice exercise.
+
+## Slice
+
+This is a frontend-only epic: no backend, no QA-as-write-code in the build stage (QA still writes tests at Stage 5), no contract drift risk. The slice exists to name (a) what's frozen, (b) what the frontend specialist owns, and (c) what scaffold is part of this epic vs assumed.
+
+**Frozen paths** (read-only after this stage until re-slice):
+
+- `packages/contracts/**` — the type contract for the lesson (currently just `Lesson` in `@a11y-lab/contracts`). Frontend may import; not modify.
+
+**Scaffold included in this epic** (since `apps/web` is currently a stub):
+
+- Initialize Next.js 16 + React 19 + TypeScript in `apps/web` using the App Router.
+- Tailwind CSS 4 set up with a minimal token surface — focus ring, semantic colors (foreground / muted / accent / danger / success), spacing. No shadcn / no design system extraction yet — that's a future epic.
+- Root layout with `<html lang="en">` + `<body>` + a generic skip-link to `#main`.
+- A single route at `/lessons/contact-form` for the lesson.
+- Bare-minimum Next.js config (no images domain config yet; no env handling beyond what Next ships with).
+
+**Frontend slice** (`feature/e-01-accessible-form-lesson--frontend`):
+
+- *Files frontend may write:*
+  - `apps/web/**` — Next.js scaffold + the lesson route + components + tokens.
+  - `packages/contracts/src/index.ts` — read-only after slice freeze; frontend imports only.
+- *Components to build* (suggested decomposition; specialist may refine):
+  - `<LessonChrome>` — page wrapper that renders the toggle + a header + slot for the active version + the screen-reader checklist panel.
+  - `<VersionToggle>` — accessible segmented control / radio group for switching broken vs fixed. Default state: broken.
+  - `<BrokenContactForm>` — faithful failure-mode form (placeholders-as-labels, div-as-submit, color-only errors). Self-contained component.
+  - `<FixedContactForm>` — accessible form (native semantics, label associations, `aria-describedby`, focus management, polite live region). Self-contained component.
+  - `<ScreenReaderChecklist>` — sidebar / below-fold panel listing 4–5 concrete actions to try.
+- *State ownership:* local component state via `useState` for form values + validation. No global store, no React Query (stateless lesson, no API). Toggle state lives in `<LessonChrome>` and resets form state when flipped.
+- *Tokens to add* under `apps/web/src/app/globals.css`: `--color-foreground`, `--color-muted`, `--color-accent`, `--color-danger`, `--color-success`, `--ring-color`, `--ring-width`. Use these via Tailwind's `@theme` directive (Tailwind 4 syntax).
+- *Mobile-first:* single-column layout at <768px. `<ScreenReaderChecklist>` collapses below the form on mobile, sits to the side on ≥1024px.
+
+**QA slice** (post-integrate, on `feature/e-01-accessible-form-lesson--qa`):
+
+- Component tests (Vitest + Testing Library): each form variant renders, validates correctly, behaves on submit.
+- A11y assertions: focus moves on submit-with-errors; `aria-invalid` toggles; live region announces.
+- Manual screen-reader plan as enumerated in the existing `## UAT scenarios`.
+
+**Build commands** (from `.shipwright.yml` `verify.detected`):
+
+- Install: `pnpm install` (will pull Next.js + React + Tailwind into `apps/web`).
+- Verify: `pnpm verify` (currently echoes ok; specialist should refine to actually run lint + typecheck + test once those exist).
+- Format: `biome` if added; otherwise `pnpm exec next lint`.
+
+**Out of scope for this slice** (reaffirming the refined epic):
+
+- No backend submission, no API route, no contract additions beyond the existing `Lesson` type.
+- No automated a11y testing in CI (axe / pa11y).
+- No design-system extraction; one-off Tailwind tokens are fine.
+- No theming / dark-mode wiring (can be added in a follow-up).
+- No additional lessons; this epic ships the contact-form lesson only.
+
+## Test plan
+
+### Automated tests (pnpm verify)
+
+7 test files, 23 tests total, all passing.
+
+- `version-toggle.test.tsx` (2): default broken; toggling resets form state.
+- `broken-contact-form.test.tsx` (3): pinning-tests for the failures (no `<label>`, div-as-submit, no `aria-invalid`). These fail loudly if the broken form is ever "fixed" — the lesson's contrast depends on those failures staying intact.
+- `fixed-contact-form.test.tsx` (3): focus moves to first invalid; focus moves to next invalid after first fixed; success live-region populates and form clears.
+- `keyboard-and-touch.test.tsx` (5): no positive `tabIndex`; visual order = DOM order; touch targets ≥44px on the fixed version.
+- `fixed-live-region.test.tsx` (2): live region present in initial DOM with empty text; success uses text + icon + region focus, never color alone.
+- `fixed-edge-cases.test.tsx` (4): `aria-describedby` always single id; describedby clears on correction; double-submit absorbed; `aria-busy` + "Sending…" during pending.
+- `lesson-chrome.test.tsx` (4): checklist `<aside>` with ≥4 items, not hidden; coexists with both versions; 4-cycle toggle leaves clean state; mid-pending toggle doesn't leak success markup.
+
+### Manual verification — screen reader + keyboard
+
+Run on macOS (VoiceOver, Cmd+F5) or Windows (NVDA). Use a keyboard only — no trackpad / mouse. Each step has expected results on **broken** and on **fixed**; both must hold for the PR to merge.
+
+Setup: `pnpm --filter @a11y-lab/web dev` and open `/lessons/contact-form`. The page must land on broken by default.
+
+- [ ] **1. Default landing.** Reload the page. Confirm "Broken (default)" toggle is selected and the broken form is visible. *Expected:* always returns to broken — no localStorage persistence.
+- [ ] **2. Label discovery (broken).** SR active, Tab once into the form. *Expected on broken:* "edit text" or only the placeholder once; no programmatic label, no required state.
+- [ ] **3. Label discovery (fixed).** Toggle to fixed. Tab to the first field. *Expected:* "Your name, required, edit text" (or platform equivalent — label, type, required).
+- [ ] **4. Empty submit (broken).** Return to broken. Tab through every field, then keep tabbing. *Expected:* Tab skips the "Send message" div entirely. No keyboard path to submit. Pressing Enter on the last input does nothing audible.
+- [ ] **5. Empty submit (fixed).** Toggle to fixed. Tab to submit. Press Enter. *Expected:* focus jumps to "Your name"; SR announces the field's label *and* "Name is required" via `aria-describedby`. Button isn't focused after.
+- [ ] **6. Error recovery (fixed).** Type "Ada Lovelace" into Your name. Tab to submit, press Enter. *Expected:* focus to Email; "Email is required" announced. Name is no longer reported invalid.
+- [ ] **7. Success announcement (broken).** Fill all fields validly, click the green "Send message" div with the mouse (you can't tab to it). *Expected:* green check appears; SR says nothing.
+- [ ] **8. Success announcement (fixed).** Fill all fields validly. Tab to submit, press Enter. *Expected:* button shows "Sending…" and disables briefly; ~700ms later polite live region announces "Message sent. We'll be in touch soon." Focus on the success region. Message intelligible without seeing the green color.
+- [ ] **9. Double-submit guard (fixed).** With form valid, press Enter on submit, then *immediately* press Enter several more times. *Expected:* one announcement only.
+- [ ] **10. Form-controls navigation.** Use SR's form-controls shortcut (NVDA: F. VoiceOver: VO+Cmd+J). *Expected on broken:* control count is wrong (no submit enumerated); inputs unlabelled. *Expected on fixed:* every control enumerated with role + label, including "Send message" button.
+- [ ] **11. Checklist panel reachability.** Tab past the submit button on either version. *Expected:* tab moves into the "Try this with your screen reader" panel; SR reads the heading and items. No focus trap; Shift+Tab returns through the form.
+- [ ] **12. Mobile layout sanity.** Resize to 320px wide. Scroll. *Expected:* no horizontal scroll. Form stays single-column. Checklist sits below the form, not beside it. Touch targets ~44px tall.
+- [ ] **13. Visible focus ring.** Tab through every interactive element on both versions. *Expected:* every focusable element shows a visible focus indicator. No bare `outline: none`.
+
